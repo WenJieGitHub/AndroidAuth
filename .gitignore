@@ -16,3 +16,6 @@ local.properties
 .idea
 
 /repo
+
+auth_upload.gradle
+cxw-key.store
