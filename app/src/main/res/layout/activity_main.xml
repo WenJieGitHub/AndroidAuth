@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+    </data>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/wx_login"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="微信登陆"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/wx_share_link"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="微信分享链接"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/wb_login"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="微博登陆"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/wb_share_link"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="微博分享链接"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/zfb_pay"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="支付宝支付"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/yl_pay"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="银联支付"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/qq_login"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="QQ登陆"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/qq_share"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="QQ分享"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/xm_login"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="小米登陆"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+
+</layout>

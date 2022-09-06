@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="love.nuoyan.android.auth.hw">
+    <!--check network permissions-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!--check wifi state-->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <application>
+        <meta-data
+            android:name="com.huawei.hms.client.channel.androidMarket"
+            android:value="false" />
+
+        <activity
+            android:name=".AuthActivityForHW"
+            android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+    </application>
+</manifest>

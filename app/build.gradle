@@ -1,0 +1,105 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    compileSdk rootProject.compileSdkV
+
+    defaultConfig {
+        applicationId "love.nuoyan.android.auth.example"
+        minSdk rootProject.minSdkV
+        targetSdk rootProject.targetSdkV
+        versionCode rootProject.appVersionCode
+        versionName rootProject.appVersionName
+
+        flavorDimensions rootProject.appVersionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    signingConfigs {
+        release {
+            storeFile file("$projectDir/xxx")
+            keyAlias "xxx"
+            keyPassword "xxx"
+            storePassword "xxx"
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        dataBinding = true
+    }
+
+    productFlavors {
+        auth {
+            applicationId("xxx")
+            resValue("string", "app_name", "测试")
+            buildConfigField("boolean", "isDebug", "true")
+            manifestPlaceholders = [
+                    WXAppId:"xxx",
+
+                    WBAppKey:"wbxxx",
+                    WBScope:"xxx",
+                    WBRedirectUrl:"xxx",
+
+                    ZFBScheme:"xxx",
+
+                    QQAppId:"tencentxxx",
+                    QQAuthorities:"${applicationId}.fileProvider",
+
+                    XMAppId:"xmxxx",
+                    XMAppKey:"xmxxx",
+                    XMRedirectUri:"xxx",
+
+                    OPPODebug:"false",
+                    OPPOAppKey:"xxx",
+                    OPPOAppSecret:"xxx",
+            ]
+        }
+    }
+}
+
+dependencies {
+    implementation project(path: ':auth')
+    implementation project(path: ':auth_google')
+    implementation project(path: ':auth_hw')
+    implementation project(path: ':auth_oppo')
+    implementation project(path: ':auth_qq')
+    implementation project(path: ':auth_wb')
+    implementation project(path: ':auth_wx')
+    implementation project(path: ':auth_xm')
+    implementation project(path: ':auth_yl')
+    implementation project(path: ':auth_zfb')
+
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.5.0'
+    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
+    implementation 'com.squareup.okhttp3:okhttp:4.9.1'                                 // 网络工具
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
