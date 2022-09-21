@@ -14,6 +14,8 @@
 
 ## 配置maven仓库
 ```groovy
+maven { url 'https://maven.aliyun.com/repository/google' }
+maven { url 'https://maven.aliyun.com/repository/public' }      // 小米有些库需要jcenter
 maven { url 'https://www.jitpack.io' }                          // jitpack仓库
 maven { url 'https://developer.huawei.com/repo/' }              // 华为仓库
 maven {                                                         // 小米仓库
@@ -33,7 +35,7 @@ ndk { abiFilters 'armeabi', 'armeabi-v7a', 'arm64-v8a' }
 ## 添加依赖
 ```groovy
 // 版本不固定
-implementation 'androidx.appcompat:appcompat:1.5.0'
+implementation 'androidx.appcompat:appcompat:1.5.1'
 // 版本不固定  QQ 库需要引入 okhttp3
 implementation 'com.squareup.okhttp3:okhttp:4.9.1'
 
