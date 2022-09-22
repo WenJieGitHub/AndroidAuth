@@ -38,18 +38,21 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
         productType: GoogleProductType
     ) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient() { billingResult, purchases ->
-            when (billingResult.responseCode) {
-                BillingClient.BillingResponseCode.OK -> {
-                    val list = purchases?.map { JSONObject(it.originalJson) }
-                    resultSuccess("payProductQuery 购买交易的更新", null, null, list)
+        if (productList.isEmpty()) {
+            resultError("payProductQuery productList 参数不能为空")
+        } else {
+            val client = newClient() { billingResult, purchases ->
+                when (billingResult.responseCode) {
+                    BillingClient.BillingResponseCode.OK -> {
+                        val list = purchases?.map { JSONObject(it.originalJson) }
+                        resultSuccess("payProductQuery 购买交易的更新", null, null, list)
+                    }
+                    BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
+                    else -> resultError("payProductQuery 购买交易的更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
                 }
-                BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                else -> resultError("payProductQuery 购买交易的更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
             }
-        }
-        startConnection(client) {
-            val queryProductDetailsParams = QueryProductDetailsParams.newBuilder()
+            startConnection(client) {
+                val queryProductDetailsParams = QueryProductDetailsParams.newBuilder()
                     .setProductList(
                         productList.map { productId ->
                             QueryProductDetailsParams.Product.newBuilder()
@@ -64,58 +67,59 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                         }
                     )
                     .build()
-            client.queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productDetailsList ->
-                when (billingResult.responseCode) {
-                    BillingClient.BillingResponseCode.OK -> {
-                        val list = productDetailsList.map { productDetails ->
-                            val oneTimePurchaseOfferDetails = productDetails.oneTimePurchaseOfferDetails?.let {
-                                GoogleProductDetails.OneTimePurchaseOfferDetails(
-                                    it.formattedPrice,
-                                    it.priceAmountMicros,
-                                    it.priceCurrencyCode,
-                                    it.zza()
-                                )
-                            }
-                            val subscriptionOfferDetails = productDetails.subscriptionOfferDetails?.let { list ->
-                                list.map {
-                                    val pricingPhases = GoogleProductDetails.PricingPhases(
-                                        it.pricingPhases.pricingPhaseList.map { pp ->
-                                            GoogleProductDetails.PricingPhase(
-                                                pp.formattedPrice,
-                                                pp.priceAmountMicros,
-                                                pp.priceCurrencyCode,
-                                                pp.billingPeriod,
-                                                pp.billingCycleCount,
-                                                pp.recurrenceMode
-                                            )
-                                        }
-                                    )
-                                    GoogleProductDetails.SubscriptionOfferDetails(
-                                        it.offerToken,
-                                        it.offerTags,
-                                        pricingPhases
+                client.queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productDetailsList ->
+                    when (billingResult.responseCode) {
+                        BillingClient.BillingResponseCode.OK -> {
+                            val list = productDetailsList.map { productDetails ->
+                                val oneTimePurchaseOfferDetails = productDetails.oneTimePurchaseOfferDetails?.let {
+                                    GoogleProductDetails.OneTimePurchaseOfferDetails(
+                                        it.formattedPrice,
+                                        it.priceAmountMicros,
+                                        it.priceCurrencyCode,
+                                        it.zza()
                                     )
                                 }
+                                val subscriptionOfferDetails = productDetails.subscriptionOfferDetails?.let { list ->
+                                    list.map {
+                                        val pricingPhases = GoogleProductDetails.PricingPhases(
+                                            it.pricingPhases.pricingPhaseList.map { pp ->
+                                                GoogleProductDetails.PricingPhase(
+                                                    pp.formattedPrice,
+                                                    pp.priceAmountMicros,
+                                                    pp.priceCurrencyCode,
+                                                    pp.billingPeriod,
+                                                    pp.billingCycleCount,
+                                                    pp.recurrenceMode
+                                                )
+                                            }
+                                        )
+                                        GoogleProductDetails.SubscriptionOfferDetails(
+                                            it.offerToken,
+                                            it.offerTags,
+                                            pricingPhases
+                                        )
+                                    }
+                                }
+                                GoogleProductDetails(
+                                    productDetails,
+                                    productDetails.toString(),
+                                    productDetails.productId,
+                                    productDetails.productType,
+                                    productDetails.title,
+                                    productDetails.name,
+                                    productDetails.zza(),
+                                    productDetails.description,
+                                    oneTimePurchaseOfferDetails,
+                                    subscriptionOfferDetails
+                                )
                             }
-                            GoogleProductDetails(
-                                productDetails,
-                                productDetails.toString(),
-                                productDetails.productId,
-                                productDetails.productType,
-                                productDetails.title,
-                                productDetails.name,
-                                productDetails.zza(),
-                                productDetails.description,
-                                oneTimePurchaseOfferDetails,
-                                subscriptionOfferDetails
-                            )
+                            resultSuccess("payProductQuery 查询商品成功", null, null, list)
                         }
-                        resultSuccess("payProductQuery 查询商品成功", null, null, list)
+                        BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
+                        else -> resultError("payProductQuery 查询商品失败: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
                     }
-                    BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                    else -> resultError("payProductQuery 查询商品失败: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
+                    client.endConnection()
                 }
-                client.endConnection()
             }
         }
     }
