@@ -10,11 +10,15 @@ object Auth {
     val separatorLine = System.getProperty("line.separator") ?: "\n"        // 换行符
 
     /**
+     * 初始化 Auth，同意隐私协议前
+     */
+    fun preInit(application: Application) = apply {
+        appContext = application
+    }
+    /**
      * 初始化 Auth，同意隐私协议后
      */
-    fun init(application: Application) = apply {
-        appContext = application
-
+    fun init() = apply {
         try {
             withHW().initSdk()
         } catch (e: Exception) {
@@ -33,12 +37,12 @@ object Auth {
     }
 
     fun getMetaData(key: String): String? {
-        return appContext.packageManager?.getApplicationInfo(appContext.packageName, PackageManager.GET_META_DATA)?.metaData?.get(key)?.toString()
+        return appContext.packageManager?.getApplicationInfo(appContext.packageName, PackageManager.GET_META_DATA)?.metaData?.getString(key)
     }
 
     //检测是否安装
     fun isInstalled(packageName: String, intent: Intent): Boolean {
-        val resInfo = Auth.appContext.packageManager.queryIntentActivities(intent, 0)
+        val resInfo = appContext.packageManager.queryIntentActivities(intent, 0)
         if (resInfo.isNotEmpty()) {
             for (info in resInfo) {
                 val activityInfo = info.activityInfo
@@ -53,7 +57,6 @@ object Auth {
     fun withMore(): AuthBuildForMore {
         return AuthBuildForMore
     }
-
     fun withGoogle(): AbsAuthBuildForGoogle {
         return try {
             val constructor = Class.forName("love.nuoyan.android.auth.google.AuthBuildForGoogle").getConstructor()
@@ -62,7 +65,6 @@ object Auth {
             throw NullPointerException("添加谷歌依赖, 并配置: $e ${(e as? InvocationTargetException)?.targetException}")
         }
     }
-
     fun withHW(): AbsAuthBuildForHW {
         return try {
             val constructor = Class.forName("love.nuoyan.android.auth.hw.AuthBuildForHW").getConstructor()
