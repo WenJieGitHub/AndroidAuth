@@ -1,6 +1,7 @@
 package love.nuoyan.android.auth.xm
 
 import android.app.Activity
+import android.app.Application
 import android.text.TextUtils
 import android.util.Log
 import com.xiaomi.gamecenter.sdk.MiAccountType
@@ -18,8 +19,8 @@ import org.json.JSONObject
 import kotlin.coroutines.resume
 
 class AuthBuildForXM : AbsAuthBuildForXM() {
-    override fun initSdk() {
-        MiCommplatform.setApplication(Auth.appContext)
+    override fun initSdk(application: Application) {
+        MiCommplatform.setApplication(application)
     }
 
     override fun onActivityCreate(activity: Activity, isDialog: Boolean, isToast: Boolean) {

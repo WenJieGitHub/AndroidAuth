@@ -6,7 +6,7 @@ abstract class AbsAuthBuildForOPPO : AbsAuthBuild() {
     /** 程序启动后主页面调用 */
     abstract fun onActivityCreate(activity: Activity)
 
-    /** 程序退出时调用, 目前有可能要求不添加 */
+    /** 程序退出时调用, 目前要求不添加 */
     abstract fun exit(activity: Activity)
 
     /**

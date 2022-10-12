@@ -4,3 +4,7 @@ plugins {
 }
 
 apply from: '../auth_module.gradle'
+
+dependencies {
+    implementation("androidx.startup:startup-runtime:1.1.1")
+}

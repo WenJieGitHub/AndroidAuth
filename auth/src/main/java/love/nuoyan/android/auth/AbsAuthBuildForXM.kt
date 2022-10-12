@@ -1,9 +1,10 @@
 package love.nuoyan.android.auth
 
 import android.app.Activity
+import android.app.Application
 
 abstract class AbsAuthBuildForXM : AbsAuthBuild() {
-    abstract fun initSdk()
+    abstract fun initSdk(application: Application)
 
     /** 程序启动后主页面调用 接入活动弹窗, 页面级别初始化  设置是否显示错误对话框,默认不显示   设置是否显示错误Toast,默认不显示 */
     abstract fun onActivityCreate(

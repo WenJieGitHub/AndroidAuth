@@ -41,7 +41,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
         if (productList.isEmpty()) {
             resultError("payProductQuery productList 参数不能为空")
         } else {
-            val client = newClient() { billingResult, purchases ->
+            val client = newClient { billingResult, purchases ->
                 when (billingResult.responseCode) {
                     BillingClient.BillingResponseCode.OK -> {
                         val list = purchases?.map { JSONObject(it.originalJson) }
@@ -133,7 +133,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
         isOfferPersonalized: Boolean
     ) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient() { billingResult, purchases ->
+        val client = newClient { billingResult, purchases ->
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     val list = purchases?.map { JSONObject(it.originalJson) }
@@ -190,7 +190,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
 
     override suspend fun payConsume(purchaseToken: String) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient() { billingResult, purchases ->
+        val client = newClient { billingResult, purchases ->
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     val list = purchases?.map { JSONObject(it.originalJson) }
@@ -217,7 +217,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
 
     override suspend fun purchaseQuery(productType: GoogleProductType) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient() { billingResult, purchases ->
+        val client = newClient { billingResult, purchases ->
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     val list = purchases?.map { JSONObject(it.originalJson) }
@@ -248,7 +248,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
 
     override suspend fun purchaseHistoryQuery(productType: GoogleProductType) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient() { billingResult, purchases ->
+        val client = newClient { billingResult, purchases ->
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     val list = purchases?.map { JSONObject(it.originalJson) }

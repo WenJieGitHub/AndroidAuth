@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="love.nuoyan.android.auth">
 
     <queries>
@@ -9,4 +10,16 @@
         <package android:name="com.instagram.android" />
         <package android:name="com.facebook.katana" />
     </queries>
+
+    <application>
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="love.nuoyan.android.auth.AuthInitializer"
+                android:value="androidx.startup" />
+        </provider>
+    </application>
 </manifest>

@@ -1,31 +1,28 @@
 package love.nuoyan.android.auth
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import java.lang.reflect.InvocationTargetException
 
 object Auth {
-    lateinit var appContext: Application
+    lateinit var appContext: Context
     val separatorLine = System.getProperty("line.separator") ?: "\n"        // 换行符
 
     /**
-     * 初始化 Auth，同意隐私协议前
+     * 同意隐私协议后，初始化 华为SDK 小米SDK 微博SDK
+     *
+     * @param application 初始化小米 sdk 时必填
      */
-    fun preInit(application: Application) = apply {
-        appContext = application
-    }
-    /**
-     * 初始化 Auth，同意隐私协议后
-     */
-    fun init() = apply {
+    fun init(application: Application? = null) = apply {
         try {
             withHW().initSdk()
         } catch (e: Exception) {
             e.printStackTrace()
         }
         try {
-            withXM().initSdk()
+            application?.let { withXM().initSdk(application) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
