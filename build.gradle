@@ -17,7 +17,7 @@ ext {
     isDev = false
     // repository
     groupId = 'love.nuoyan.android'
-    authVersion = '0.0.5'
+    authVersion = '0.0.6'
 }
 
 task clean(type: Delete) {

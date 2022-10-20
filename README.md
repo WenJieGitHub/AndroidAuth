@@ -33,7 +33,7 @@ implementation 'androidx.appcompat:appcompat:1.5.1'
 // 版本不固定  QQ 库需要引入 okhttp3
 implementation 'com.squareup.okhttp3:okhttp:4.9.1'
 
-def auth_version = "0.0.5"
+def auth_version = "0.0.6"
 implementation "love.nuoyan.android:auth:$auth_version"
 implementation "love.nuoyan.android:auth_google:$auth_version"
 implementation "love.nuoyan.android:auth_oppo:$auth_version"

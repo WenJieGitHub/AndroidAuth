@@ -8,29 +8,60 @@ import love.nuoyan.android.auth.*
 import org.json.JSONObject
 import kotlin.coroutines.resume
 
-
 class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
-    // 构建 Client, 添加交易更新监听; listener 可接收应用中所有购买交易的更新
-    private fun newClient(listener: PurchasesUpdatedListener): BillingClient {
-        return BillingClient.newBuilder(Auth.appContext)
-            .setListener(listener)
-            .enablePendingPurchases()
-            .build()
+    companion object {
+        private var mClient: BillingClient? = null
+        private var mClientListener: ((billingResult: BillingResult, purchases: List<Purchase>?) -> Unit)? = null
+        private var mClientExtListener: ((result: List<JSONObject>?) -> Unit)? = null
+        private var mConnectionListener: (() -> Unit)? = null
     }
-    // 开始尝试建立与 Google Play 的连接
-    private fun startConnection(client: BillingClient, onBillingSetupFinished: (billingResult: BillingResult) -> Unit) {
-        client.startConnection(object : BillingClientStateListener {
-            override fun onBillingSetupFinished(result: BillingResult) {
-                when (result.responseCode) {
-                    BillingClient.BillingResponseCode.OK -> onBillingSetupFinished(result)
-                    BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                    else -> resultError("GooglePlay 连接失败 请重试: code=${result.responseCode}  msg=${result.debugMessage}", null, null, 1002)
+
+    private fun initClient(
+        clientListener: ((billingResult: BillingResult, purchases: List<Purchase>?) -> Unit)? = null,
+        connectionListener: () -> Unit
+    ) {
+        mClientListener = clientListener
+        mConnectionListener = connectionListener
+        if (mClient == null) {
+            // 构建 Client, 添加交易更新监听; listener 可接收应用中所有购买交易的更新
+            mClient = BillingClient.newBuilder(Auth.appContext)
+                .setListener { billingResult, purchases ->
+                    if (mClientListener != null) {
+                        mClientListener?.invoke(billingResult, purchases)
+                    } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                        mClientExtListener?.invoke(purchases?.map { JSONObject(it.originalJson) })
+                    }
                 }
-            }
-            override fun onBillingServiceDisconnected() {
-                resultError("GooglePlay 断开连接, 请重试", null, null, 1001)
-            }
-        })
+                .enablePendingPurchases()
+                .build()
+        }
+        if (mClient?.connectionState != BillingClient.ConnectionState.CONNECTED) {
+            // 开始尝试建立与 Google Play 的连接
+            mClient!!.startConnection(object : BillingClientStateListener {
+                override fun onBillingSetupFinished(result: BillingResult) {
+                    when (result.responseCode) {
+                        BillingClient.BillingResponseCode.OK -> mConnectionListener?.invoke()
+                        BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
+                        else -> resultError("GooglePlay 连接失败 请重试: code=${result.responseCode}  msg=${result.debugMessage}", null, null, 1002)
+                    }
+                }
+                override fun onBillingServiceDisconnected() {
+                    resultError("GooglePlay 断开连接, 请重试", null, null, 1001)
+                }
+            })
+        } else {
+            mConnectionListener?.invoke()
+        }
+    }
+
+    override fun destroy(activity: Activity?) {
+        super.destroy(activity)
+        mClientListener = null
+        mConnectionListener = null
+    }
+
+    override fun setPurchasesUpdatedListener(listener: (result: List<JSONObject>?) -> Unit) {
+        mClientExtListener = listener
     }
 
     override suspend fun payProductQuery(
@@ -41,17 +72,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
         if (productList.isEmpty()) {
             resultError("payProductQuery productList 参数不能为空")
         } else {
-            val client = newClient { billingResult, purchases ->
-                when (billingResult.responseCode) {
-                    BillingClient.BillingResponseCode.OK -> {
-                        val list = purchases?.map { JSONObject(it.originalJson) }
-                        resultSuccess("payProductQuery 购买交易的更新", null, null, list)
-                    }
-                    BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                    else -> resultError("payProductQuery 购买交易的更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
-                }
-            }
-            startConnection(client) {
+            initClient() {
                 val queryProductDetailsParams = QueryProductDetailsParams.newBuilder()
                     .setProductList(
                         productList.map { productId ->
@@ -59,15 +80,15 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                                 .setProductId(productId)
                                 .setProductType(
                                     when (productType) {
-                                        GoogleProductType.INAPP ->  ProductType.INAPP
-                                        GoogleProductType.SUBS ->  ProductType.SUBS
+                                        GoogleProductType.INAPP -> ProductType.INAPP
+                                        GoogleProductType.SUBS -> ProductType.SUBS
                                     }
                                 )
                                 .build()
                         }
                     )
                     .build()
-                client.queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productDetailsList ->
+                mClient?.queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productDetailsList ->
                     when (billingResult.responseCode) {
                         BillingClient.BillingResponseCode.OK -> {
                             val list = productDetailsList.map { productDetails ->
@@ -118,7 +139,6 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                         BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
                         else -> resultError("payProductQuery 查询商品失败: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
                     }
-                    client.endConnection()
                 }
             }
         }
@@ -133,7 +153,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
         isOfferPersonalized: Boolean
     ) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient { billingResult, purchases ->
+        initClient({ billingResult, purchases ->
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     val list = purchases?.map { JSONObject(it.originalJson) }
@@ -142,8 +162,7 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                 BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
                 else -> resultError("pay 购买交易更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
             }
-        }
-        startConnection(client) {
+        }, {
             val pd = googleProductDetails.productDetails as ProductDetails
             val productDetailsParamsList = listOf(
                 BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -171,64 +190,35 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                 .setIsOfferPersonalized(isOfferPersonalized)
                 .build()
             // Launch the billing flow
-            val billingResult = client.launchBillingFlow(activity, billingFlowParams)
+            val billingResult = mClient!!.launchBillingFlow(activity, billingFlowParams)
             when (billingResult.responseCode) {
-                BillingClient.BillingResponseCode.OK -> {
-                    // 走 newClient 回调监听
-                }
-                BillingClient.BillingResponseCode.USER_CANCELED -> {
-                    resultCancel()
-                    client.endConnection()
-                }
-                else -> {
-                    resultError("pay 启动购买流程失败: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
-                    client.endConnection()
-                }
+                BillingClient.BillingResponseCode.OK -> {} // 走 newClient 回调监听
+                BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
+                else -> resultError("pay 启动购买流程失败: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
             }
-        }
+        })
     }
 
     override suspend fun payConsume(purchaseToken: String) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient { billingResult, purchases ->
-            when (billingResult.responseCode) {
-                BillingClient.BillingResponseCode.OK -> {
-                    val list = purchases?.map { JSONObject(it.originalJson) }
-                    resultSuccess("payConsume 购买交易更新", null, null, list)
-                }
-                BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                else -> resultError("payConsume 购买交易更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
-            }
-        }
-        startConnection(client) {
+        initClient {
             val consumeParams = ConsumeParams.newBuilder()
                 .setPurchaseToken(purchaseToken)
                 .build()
-            client.consumeAsync(consumeParams) { billingResult, purchaseToken ->
+            mClient!!.consumeAsync(consumeParams) { billingResult, purchaseToken ->
                 when (billingResult.responseCode) {
                     BillingClient.BillingResponseCode.OK -> resultSuccess("payConsume 购买商品消耗成功", purchaseToken, null)
                     BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
                     else -> resultError("payConsume 购买商品消耗失败: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
                 }
-                client.endConnection()
             }
         }
     }
 
     override suspend fun purchaseQuery(productType: GoogleProductType) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient { billingResult, purchases ->
-            when (billingResult.responseCode) {
-                BillingClient.BillingResponseCode.OK -> {
-                    val list = purchases?.map { JSONObject(it.originalJson) }
-                    resultSuccess("purchaseQuery 购买交易更新", null, null, list)
-                }
-                BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                else -> resultError("purchaseQuery 购买交易更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
-            }
-        }
-        startConnection(client) {
-            client.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(
+        initClient {
+            mClient!!.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(
                 when (productType) {
                     GoogleProductType.INAPP -> ProductType.INAPP
                     GoogleProductType.SUBS -> ProductType.SUBS
@@ -241,25 +231,14 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                     BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
                     else -> resultError("purchaseQuery: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
                 }
-                client.endConnection()
             }
         }
     }
 
     override suspend fun purchaseHistoryQuery(productType: GoogleProductType) = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
-        val client = newClient { billingResult, purchases ->
-            when (billingResult.responseCode) {
-                BillingClient.BillingResponseCode.OK -> {
-                    val list = purchases?.map { JSONObject(it.originalJson) }
-                    resultSuccess("purchaseHistoryQuery 购买交易更新", null, null, list)
-                }
-                BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
-                else -> resultError("purchaseHistoryQuery 购买交易更新: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
-            }
-        }
-        startConnection(client) {
-            client.queryPurchaseHistoryAsync(QueryPurchaseHistoryParams.newBuilder().setProductType(
+        initClient {
+            mClient!!.queryPurchaseHistoryAsync(QueryPurchaseHistoryParams.newBuilder().setProductType(
                 when (productType) {
                     GoogleProductType.INAPP -> ProductType.INAPP
                     GoogleProductType.SUBS -> ProductType.SUBS
@@ -272,7 +251,6 @@ class AuthBuildForGoogle: AbsAuthBuildForGoogle() {
                     BillingClient.BillingResponseCode.USER_CANCELED -> resultCancel()
                     else -> resultError("purchaseHistoryQuery: code=${billingResult.responseCode}  msg=${billingResult.debugMessage}")
                 }
-                client.endConnection()
             }
         }
     }

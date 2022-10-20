@@ -2,8 +2,14 @@ package love.nuoyan.android.auth
 
 import android.app.Activity
 import android.text.TextUtils
+import org.json.JSONObject
 
 abstract class AbsAuthBuildForGoogle : AbsAuthBuild() {
+    /**
+     * 可选，当有购买信息更新时回调（其他设备购买、线下购买），本机支付结果不走此回调
+     */
+    abstract fun setPurchasesUpdatedListener(listener: (result: List<JSONObject>?) -> Unit)
+
     /**
      * 支付商品列表查询
      * https://developer.huawei.com/consumer/cn/doc/development/HMSCore-References/productinfo-0000001050135784
