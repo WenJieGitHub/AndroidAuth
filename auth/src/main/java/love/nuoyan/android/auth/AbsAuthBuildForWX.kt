@@ -9,6 +9,14 @@ abstract class AbsAuthBuildForWX : AbsAuthBuild() {
     /** 检查应用安装 */
     abstract fun checkAppInstalled(): AuthResult
 
+    /**
+     * 调启小程序
+     * @param id 小程序原始id
+     * @param path 拉起小程序页面的可带参路径，不填默认拉起小程序首页，对于小游戏，可以只传入 query 部分，来实现传参效果，如：传入 "?foo=bar"。
+     * @param type 可选, 0 正式版 1 测试版 2 体验版
+     */
+    abstract fun launchMiniProgram(id: String, path: String, type: Int = 0): AuthResult
+
     /** 登录功能 */
     abstract suspend fun login(): AuthResult
 

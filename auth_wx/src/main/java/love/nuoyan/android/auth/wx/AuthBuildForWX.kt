@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.graphics.Bitmap
 import com.tencent.mm.opensdk.constants.ConstantsAPI
 import com.tencent.mm.opensdk.modelbiz.OpenWebview
+import com.tencent.mm.opensdk.modelbiz.WXLaunchMiniProgram
 import com.tencent.mm.opensdk.modelbiz.WXOpenBusinessWebview
 import com.tencent.mm.opensdk.modelmsg.*
 import com.tencent.mm.opensdk.modelpay.PayReq
@@ -65,10 +66,31 @@ class AuthBuildForWX : AbsAuthBuildForWX() {
         }
     }
 
+    override fun launchMiniProgram(id: String, path: String, type: Int): AuthResult {
+        return if (mAPI == null) {
+            AuthResult.Error("微信 API 初始化失败")
+        } else if (mAPI?.isWXAppInstalled != true) {
+            AuthResult.Uninstalled
+        } else {
+            val req = WXLaunchMiniProgram.Req()
+            req.userName = id   // 填小程序原始id
+            req.path = path     // 拉起小程序页面的可带参路径，不填默认拉起小程序首页，对于小游戏，可以只传入 query 部分，来实现传参效果，如：传入 "?foo=bar"。
+            req.miniprogramType = when (type) {
+                1 -> WXLaunchMiniProgram.Req.MINIPROGRAM_TYPE_TEST
+                2 -> WXLaunchMiniProgram.Req.MINIPROGRAM_TYPE_PREVIEW
+                else -> WXLaunchMiniProgram.Req.MINIPTOGRAM_TYPE_RELEASE
+            }
+            mAPI?.sendReq(req)
+            AuthResult.Success()
+        }
+    }
+
     override suspend fun login() = suspendCancellableCoroutine { coroutine ->
         mCallback = { coroutine.resume(it) }
         if (mAPI == null) {
             resultError("微信 API 初始化失败")
+        } else if (mAPI?.isWXAppInstalled != true) {
+            resultUninstalled()
         } else {
             AuthActivityForWX.authBuildForWX = this
             mAPI?.sendReq(SendAuth.Req().apply {
@@ -88,6 +110,8 @@ class AuthBuildForWX : AbsAuthBuildForWX() {
         mCallback = { coroutine.resume(it) }
         if (mAPI == null) {
             resultError("微信 API 初始化失败")
+        } else if (mAPI?.isWXAppInstalled != true) {
+            resultUninstalled()
         } else {
             AuthActivityForWX.authBuildForWX = this
             mAPI?.sendReq(SendMessageToWX.Req().apply {
@@ -116,6 +140,8 @@ class AuthBuildForWX : AbsAuthBuildForWX() {
         mCallback = { coroutine.resume(it) }
         if (mAPI == null) {
             resultError("微信 API 初始化失败")
+        } else if (mAPI?.isWXAppInstalled != true) {
+            resultUninstalled()
         } else {
             AuthActivityForWX.authBuildForWX = this
             mAPI?.sendReq(SendMessageToWX.Req().apply {
@@ -145,6 +171,8 @@ class AuthBuildForWX : AbsAuthBuildForWX() {
         mCallback = { coroutine.resume(it) }
         if (mAPI == null) {
             resultError("微信 API 初始化失败")
+        } else if (mAPI?.isWXAppInstalled != true) {
+            resultUninstalled()
         } else {
             AuthActivityForWX.authBuildForWX = this
             val req = PayReq()
@@ -167,6 +195,8 @@ class AuthBuildForWX : AbsAuthBuildForWX() {
         mCallback = { coroutine.resume(it) }
         if (mAPI == null) {
             resultError("微信 API 初始化失败")
+        } else if (mAPI?.isWXAppInstalled != true) {
+            resultUninstalled()
         } else if (useOld) {
             AuthActivityForWX.authBuildForWX = this
             val req = OpenWebview.Req()

@@ -6,6 +6,7 @@ import android.os.Bundle
 import com.tencent.mm.opensdk.constants.ConstantsAPI
 import com.tencent.mm.opensdk.modelbase.BaseReq
 import com.tencent.mm.opensdk.modelbase.BaseResp
+import com.tencent.mm.opensdk.modelbiz.WXLaunchMiniProgram
 import com.tencent.mm.opensdk.modelmsg.GetMessageFromWX
 import com.tencent.mm.opensdk.modelmsg.SendAuth
 import com.tencent.mm.opensdk.modelmsg.ShowMessageFromWX
@@ -35,6 +36,9 @@ class AuthActivityForWX : Activity() {
                 jsonObject.put("extData", it.extData)
                     .put("prepayId", it.prepayId)
                     .put("returnKey", it.returnKey)
+            }
+            (resp as? WXLaunchMiniProgram.Resp)?.let {
+                jsonObject.put("extMsg", it.extMsg)
             }
             return jsonObject
         }
@@ -80,10 +84,7 @@ class AuthActivityForWX : Activity() {
                 ConstantsAPI.COMMAND_PAY_BY_WX -> {                                             // 支付
                     build.resultSuccess(respParseToJson(resp).toString(), activity = activity)
                 }
-                else -> build.resultSuccess(
-                    "未确定返回类型: ${respParseToJson(resp)}",
-                    activity = activity
-                )
+                else -> build.resultSuccess("未确定返回类型: ${respParseToJson(resp)}", activity = activity)
             }
         }
     }
@@ -96,19 +97,14 @@ class AuthActivityForWX : Activity() {
                     BaseResp.ErrCode.ERR_USER_CANCEL,
                     BaseResp.ErrCode.ERR_AUTH_DENIED -> {
                         authBuildForWX?.also { it.resultCancel(this@AuthActivityForWX) }
-                            ?: onResultCancel("取消或拒绝", respParseToJson(resp))
+                            ?: onResultCancel() // "取消或拒绝", respParseToJson(resp)
                     }
                     BaseResp.ErrCode.ERR_OK -> {
                         authBuildForWX?.also { respParseSuccess(it, resp, this@AuthActivityForWX) }
                             ?: onResultSuccess("成功", respParseToJson(resp))
                     }
                     else -> {
-                        authBuildForWX?.also {
-                            it.resultError(
-                                "失败: ${respParseToJson(resp)}",
-                                this@AuthActivityForWX
-                            )
-                        }
+                        authBuildForWX?.also { it.resultError("失败: ${respParseToJson(resp)}", this@AuthActivityForWX) }
                             ?: onResultError("失败", respParseToJson(resp))
                     }
                 }
@@ -122,29 +118,16 @@ class AuthActivityForWX : Activity() {
         override fun onReq(req: BaseReq?) {
             if (authBuildForWX != null) {
                 if (req != null) {
-                    authBuildForWX?.resultSuccess(
-                        "签约完成",
-                        reqParseToJson(req).toString(),
-                        this@AuthActivityForWX
-                    )
+                    authBuildForWX?.resultSuccess("签约完成", reqParseToJson(req).toString(), this@AuthActivityForWX)
                 } else {
                     authBuildForWX?.resultError("微信发送请求数据为空", this@AuthActivityForWX)
                 }
             } else {
                 if (req != null) {
                     when (req.type) {
-                        ConstantsAPI.COMMAND_GETMESSAGE_FROM_WX -> onResultSuccess(
-                            "GETMESSAGE_FROM_WX",
-                            reqParseToJson(req)
-                        )
-                        ConstantsAPI.COMMAND_SHOWMESSAGE_FROM_WX -> onResultSuccess(
-                            "SHOWMESSAGE_FROM_WX",
-                            reqParseToJson(req)
-                        )
-                        ConstantsAPI.COMMAND_LAUNCH_BY_WX -> onResultSuccess(
-                            "LAUNCH_BY_WX",
-                            reqParseToJson(req)
-                        )
+                        ConstantsAPI.COMMAND_GETMESSAGE_FROM_WX -> onResultSuccess("GETMESSAGE_FROM_WX", reqParseToJson(req))
+                        ConstantsAPI.COMMAND_SHOWMESSAGE_FROM_WX -> onResultSuccess("SHOWMESSAGE_FROM_WX", reqParseToJson(req))
+                        ConstantsAPI.COMMAND_LAUNCH_BY_WX -> onResultSuccess("LAUNCH_BY_WX", reqParseToJson(req))
                         else -> onResultSuccess("其他类型", reqParseToJson(req))
                     }
                 } else {
@@ -191,7 +174,7 @@ class AuthActivityForWX : Activity() {
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
-    private fun onResultCancel(msg: String, json: JSONObject? = null) {
+    private fun onResultCancel() {
         callback?.invoke(AuthResult.Cancel)
         finish()
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
